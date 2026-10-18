@@ -14,11 +14,11 @@
     "db:reset": "prisma migrate reset"
   },
   "dependencies": {
-    "@auth/prisma-adapter": "^2.11.3",
     "@prisma/client": "^6.19.3",
+    "@supabase/ssr": "^0.12.7",
+    "@supabase/supabase-js": "^2.118.0",
     "bcryptjs": "^3.0.3",
     "next": "16.4.0",
-    "next-auth": "^5.0.0-beta.32",
     "react": "19.3.1",
     "react-dom": "19.3.1",
     "zod": "^4.6.7"

@@ -22,8 +22,10 @@ function GoogleMark() {
 
 export default function LoginForm({
   authError,
+  callbackUrl,
 }: {
   authError: string | null;
+  callbackUrl: string;
 }) {
   const [state, formAction, pending] = useActionState(
     loginWithCredentials,
@@ -51,6 +53,7 @@ export default function LoginForm({
           <p className="auth-intro">Sign in to see your orders and manage your account.</p>
 
           <form action={loginWithGoogle}>
+            <input name="callbackUrl" type="hidden" value={callbackUrl} />
             <button className="auth-google-button" type="submit">
               <GoogleMark />
               Continue with Google
@@ -60,6 +63,7 @@ export default function LoginForm({
           <div aria-hidden="true" className="auth-divider"><span>or continue with email</span></div>
 
           <form action={formAction} className="auth-credentials-form">
+            <input name="callbackUrl" type="hidden" value={callbackUrl} />
             <label htmlFor="login-email">Email address</label>
             <input
               autoComplete="email"
@@ -91,7 +95,9 @@ export default function LoginForm({
             </button>
           </form>
 
-          <p className="auth-help">Need help signing in? Contact your store administrator.</p>
+          <p className="auth-help">
+            New to Sachin Brands? <Link href="/signup">Create an account</Link>
+          </p>
         </section>
 
         <aside aria-label="About the store" className="auth-aside">

@@ -6,6 +6,7 @@ import {
   SITE_TAGLINE,
   SITE_THEME,
 } from "@/config/site";
+import { StorefrontProvider } from "@/components/storefront/storefront-provider";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -38,7 +39,9 @@ const themeVariables = {
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
     <html lang="en" style={themeVariables}>
-      <body>{children}</body>
+      <body>
+        <StorefrontProvider>{children}</StorefrontProvider>
+      </body>
     </html>
   );
 }
