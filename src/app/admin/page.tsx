@@ -9,6 +9,8 @@ export const metadata: Metadata = {
   description: "Manage Sachin Brands products, orders and store settings.",
 };
 
+export const dynamic = "force-dynamic";
+
 type SearchParams = Promise<{
   days?: string;
   ordersPage?: string;
@@ -53,7 +55,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Search
       <main className="sb-admin-access">
         <h1>Administrator sign-in required</h1>
         <p>Sign in to an account that has been provisioned by the Supabase project owner.</p>
-        <Link className="sb-button sb-button-primary" href="/login?callbackUrl=%2Fadmin">Sign in</Link>
+        <Link className="sb-button sb-button-primary" href="/admin/login">Admin sign in</Link>
       </main>
     );
   }

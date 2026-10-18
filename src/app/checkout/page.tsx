@@ -10,6 +10,8 @@ export const metadata: Metadata = {
   description: "Review your Sachin Brands cart and place your order securely.",
 };
 
+export const dynamic = "force-dynamic";
+
 type CheckoutConfig = {
   cod_enabled: boolean;
   razorpay_enabled: boolean;

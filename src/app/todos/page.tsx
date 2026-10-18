@@ -1,5 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 
+export const dynamic = "force-dynamic";
+
 export default async function TodosPage() {
   const supabase = await createClient();
   const { data: todos, error } = await supabase

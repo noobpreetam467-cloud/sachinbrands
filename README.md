@@ -28,6 +28,16 @@ project. These are used by the Supabase Auth clients. Keep any database
 passwords and Supabase secret/service-role keys private; do not use a
 service-role key in `NEXT_PUBLIC_` variables.
 
+For Vercel, add those same two variables under **Project → Settings → Environment
+Variables** for every environment you deploy (Production, Preview, and
+Development), then redeploy. Use the project's **Project URL** for
+`NEXT_PUBLIC_SUPABASE_URL` and its **publishable key** (or legacy `anon` key)
+for `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`. Do not put a key beginning
+`sb_secret_`, a service-role key, or a database password in either variable.
+After setting them, test `/login`, `/signup`, and the catalog in the deployment;
+the server checks Supabase-backed routes and reports missing or unsafe public
+configuration without blocking unrelated storefront pages.
+
 Open [http://localhost:3000](http://localhost:3000). Use `npm run lint` and
 `npm run build` to check the project.
 
@@ -73,9 +83,12 @@ The secure admin role, administrator-only RLS policies and operations, live
 dashboard reporting, product/category/inventory/order/coupon/return/review
 management, and editable homepage/store settings are in
 [`supabase/migrations/20261018190000_admin_dashboard.sql`](./supabase/migrations/20261018190000_admin_dashboard.sql).
+The payment confirmation hardening migration,
+[`supabase/migrations/20261018200000_restrict_razorpay_confirmation.sql`](./supabase/migrations/20261018200000_restrict_razorpay_confirmation.sql),
+limits the paid-order confirmation RPC to the server-side service role.
 Apply it to the connected project using the Supabase SQL Editor (or your
-authorized Supabase CLI workflow), in this order: catalog, checkout, then
-customer account, then admin dashboard. The account migration provisions each new Supabase Auth user
+authorized Supabase CLI workflow), in this order: catalog, checkout, customer
+account, admin dashboard, then payment confirmation hardening. The account migration provisions each new Supabase Auth user
 with a profile, wishlist, and notification preferences, and backfills those
 records for existing users. It records new order status transitions and creates
 in-app order notifications from actual order changes. Customers can cancel
@@ -160,8 +173,9 @@ SUPABASE_SERVICE_ROLE_KEY=
 Set the Razorpay webhook URL to
 `https://<your-domain>/api/razorpay/webhook` and subscribe to
 `payment.captured`. The webhook signing secret must match
-`RAZORPAY_WEBHOOK_SECRET`. The service-role key is used only in this server-side
-webhook route. Without these settings or the applied commerce migration, the
+`RAZORPAY_WEBHOOK_SECRET`. The service-role key is used only by the server-side
+payment verification and webhook routes, after their respective provider
+verification checks. Without these settings or the applied commerce migration, the
 app reports checkout as unavailable and does not claim a payment or order was
 completed. Orders awaiting online payment remain pending until Razorpay's
 verified callback or webhook confirms payment; customers can resume the same

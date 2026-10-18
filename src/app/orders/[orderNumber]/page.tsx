@@ -10,6 +10,8 @@ import { createReadOnlyClient } from "@/utils/supabase/server";
 
 export const metadata: Metadata = { title: "Order tracking" };
 
+export const dynamic = "force-dynamic";
+
 type AddressSnapshot = {
   recipient_name?: string;
   phone?: string;

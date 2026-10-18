@@ -2179,7 +2179,7 @@ body {
   }
 
   .admin-nav-link {
-    min-height: 39px;
+    min-height: 44px;
     flex: 0 0 auto;
     gap: 8px;
     padding: 0 10px;
@@ -2248,8 +2248,9 @@ body {
   }
 
   .admin-page-heading .admin-button {
-    width: 36px;
-    min-width: 36px;
+    width: 44px;
+    min-width: 44px;
+    min-height: 44px;
     overflow: hidden;
     gap: 0;
     padding: 0;
@@ -2418,6 +2419,12 @@ body {
   align-items: center;
   gap: clamp(38px, 7vw, 92px);
   margin: 27px auto 18px;
+}
+
+.auth-layout-single {
+  min-height: min(615px, calc(100vh - 150px));
+  grid-template-columns: minmax(0, 395px);
+  justify-content: center;
 }
 
 .auth-card {
@@ -2598,6 +2605,18 @@ body {
 }
 
 .auth-help a {
+  color: #64784f;
+  font-weight: 600;
+}
+
+.auth-admin-link {
+  margin: 12px 0 0;
+  color: #969a91;
+  font-size: 10px;
+  text-align: center;
+}
+
+.auth-admin-link a {
   color: #64784f;
   font-weight: 600;
 }
@@ -5601,6 +5620,7 @@ body {
   }
 
   .sb-announcement > a {
+    min-height: 44px;
     margin-left: 0;
   }
 
@@ -5612,6 +5632,7 @@ body {
 
   .sb-brand {
     gap: 7px;
+    min-height: 44px;
   }
 
   .sb-brand img {
@@ -5633,14 +5654,25 @@ body {
     display: none;
   }
 
+  .sb-search-wrap {
+    min-width: 0;
+  }
+
   .sb-search {
-    height: 39px;
+    height: 46px;
+    min-width: 0;
     gap: 7px;
     padding: 0 11px;
   }
 
   .sb-search input {
-    font-size: 10px;
+    min-height: 44px;
+    font-size: 16px;
+  }
+
+  .sb-product-quantity button {
+    width: 44px;
+    height: 44px;
   }
 
   .sb-header-actions {
@@ -6085,7 +6117,7 @@ body {
   }
 
   .sb-search input {
-    font-size: 9px;
+    font-size: 16px;
   }
 
   .sb-hero {

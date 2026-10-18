@@ -32,6 +32,8 @@ export const metadata: Metadata = {
   description: "Manage your Sachin Brands profile, orders, addresses and preferences.",
 };
 
+export const dynamic = "force-dynamic";
+
 function ProfileIcon({ name }: { name: string }) {
   const shapes: Record<string, ReactNode> = {
     user: <><circle cx="12" cy="8" r="4" /><path d="M5 21v-2a7 7 0 0 1 14 0v2" /></>,

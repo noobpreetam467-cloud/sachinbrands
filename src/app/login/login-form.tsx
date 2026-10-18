@@ -98,6 +98,9 @@ export default function LoginForm({
           <p className="auth-help">
             New to Sachin Brands? <Link href="/signup">Create an account</Link>
           </p>
+          <p className="auth-admin-link">
+            Store administrator? <Link href="/admin/login">Admin sign in</Link>
+          </p>
         </section>
 
         <aside aria-label="About the store" className="auth-aside">

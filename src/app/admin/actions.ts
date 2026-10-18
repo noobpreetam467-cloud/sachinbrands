@@ -37,7 +37,7 @@ const variantSchema = z.array(z.object({
 async function requireAdmin() {
   const supabase = await createClient();
   const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) redirect("/login?callbackUrl=%2Fadmin");
+  if (authError || !user) redirect("/admin/login");
   const { data: allowed, error } = await supabase.rpc("is_store_admin");
   if (error || allowed !== true) {
     if (error) console.error("Could not verify administrator role:", error.message);

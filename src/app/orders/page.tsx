@@ -8,6 +8,8 @@ import { ResumePaymentButton } from "@/components/storefront/resume-payment-butt
 import { StorefrontLayout } from "@/components/storefront/storefront-layout";
 import { createReadOnlyClient } from "@/utils/supabase/server";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "My orders",
   description: "View your Sachin Brands order references and payment status.",

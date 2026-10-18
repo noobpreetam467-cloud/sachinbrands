@@ -9,6 +9,8 @@ import { createReadOnlyClient } from "@/utils/supabase/server";
 
 export const metadata: Metadata = { title: "Order status" };
 
+export const dynamic = "force-dynamic";
+
 type OrderRow = {
   id: string;
   order_number: string;

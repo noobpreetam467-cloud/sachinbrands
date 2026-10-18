@@ -1,4 +1,5 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
+import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/utils/supabase/server";
@@ -31,7 +32,11 @@ export async function POST(request: Request) {
   if (!parsed.success) return NextResponse.json({ error: "Payment verification details are invalid." }, { status: 400 });
   const secret = process.env.RAZORPAY_KEY_SECRET;
   const keyId = process.env.RAZORPAY_KEY_ID;
-  if (!secret || !keyId) return NextResponse.json({ error: "Online payment verification is not configured." }, { status: 503 });
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!secret || !keyId || !serviceRoleKey || !supabaseUrl) {
+    return NextResponse.json({ error: "Online payment verification is not configured." }, { status: 503 });
+  }
 
   const supabase = await createClient();
   const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -100,7 +105,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Razorpay has not captured this payment yet. Do not pay again; check the order status shortly." }, { status: 409 });
   }
 
-  const { error: confirmError } = await supabase.rpc("confirm_razorpay_payment", {
+  const serviceClient = createServiceClient(supabaseUrl, serviceRoleKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+  const { error: confirmError } = await serviceClient.rpc("confirm_razorpay_payment", {
     p_order_id: parsed.data.orderId,
     p_provider_payment_id: parsed.data.razorpay_payment_id,
   });
