@@ -1,4 +1,5 @@
 import { cache } from "react";
+import { unstable_rethrow } from "next/navigation";
 import { createReadOnlyClient } from "@/utils/supabase/server";
 import {
   CATALOG_PRODUCT_SELECT,
@@ -46,8 +47,30 @@ export type ProductFilters = {
   ids?: string[];
 };
 
+type CatalogClientResult =
+  | { client: Awaited<ReturnType<typeof createReadOnlyClient>>; error: null }
+  | { client: null; error: CatalogError };
+
+async function getCatalogClient(): Promise<CatalogClientResult> {
+  try {
+    return { client: await createReadOnlyClient(), error: null };
+  } catch (error) {
+    unstable_rethrow(error);
+    console.error("Could not configure Supabase catalog client:", error);
+    return {
+      client: null,
+      error: {
+        message: error instanceof Error ? error.message : "Supabase catalog configuration is unavailable.",
+        code: "SUPABASE_CONFIGURATION_ERROR",
+      },
+    };
+  }
+}
+
 export async function getCategories(): Promise<CatalogResult<StoreCategory[]>> {
-  const supabase = await createReadOnlyClient();
+  const clientResult = await getCatalogClient();
+  if (clientResult.error) return { data: [], error: clientResult.error };
+  const supabase = clientResult.client;
   const { data, error } = await supabase
     .from("categories")
     .select("id,slug,name,description,image_url")
@@ -74,7 +97,11 @@ export async function getCategories(): Promise<CatalogResult<StoreCategory[]>> {
 export async function getProducts(
   filters: ProductFilters = {},
 ): Promise<CatalogResult<{ products: StoreProduct[]; total: number }>> {
-  const supabase = await createReadOnlyClient();
+  const clientResult = await getCatalogClient();
+  if (clientResult.error) {
+    return { data: { products: [], total: 0 }, error: clientResult.error };
+  }
+  const supabase = clientResult.client;
   const page = Math.max(1, filters.page ?? 1);
   const pageSize = Math.min(48, Math.max(1, filters.pageSize ?? 24));
   let query = supabase
@@ -144,7 +171,9 @@ export async function getProducts(
 }
 
 export async function getProductBrands(): Promise<CatalogResult<string[]>> {
-  const supabase = await createReadOnlyClient();
+  const clientResult = await getCatalogClient();
+  if (clientResult.error) return { data: [], error: clientResult.error };
+  const supabase = clientResult.client;
   const { data, error } = await supabase
     .from("catalog_products")
     .select("brand")
@@ -164,7 +193,9 @@ export async function getProductBrands(): Promise<CatalogResult<string[]>> {
 export const getProductBySlug = cache(async (
   slug: string,
 ): Promise<CatalogResult<StoreProduct | null>> => {
-  const supabase = await createReadOnlyClient();
+  const clientResult = await getCatalogClient();
+  if (clientResult.error) return { data: null, error: clientResult.error };
+  const supabase = clientResult.client;
   const { data, error } = await supabase
     .from("catalog_products")
     .select(CATALOG_PRODUCT_SELECT)
@@ -202,7 +233,9 @@ export const getProductBySlug = cache(async (
 export async function getProductVariants(
   productId: string,
 ): Promise<CatalogResult<StoreVariant[]>> {
-  const supabase = await createReadOnlyClient();
+  const clientResult = await getCatalogClient();
+  if (clientResult.error) return { data: [], error: clientResult.error };
+  const supabase = clientResult.client;
   const { data, error } = await supabase
     .from("product_variants")
     .select("id,sku,name,attributes,price_inr,original_price_inr,stock_quantity")
@@ -233,7 +266,9 @@ export async function getProductVariants(
 export async function getProductReviews(
   productId: string,
 ): Promise<CatalogResult<StoreReview[]>> {
-  const supabase = await createReadOnlyClient();
+  const clientResult = await getCatalogClient();
+  if (clientResult.error) return { data: [], error: clientResult.error };
+  const supabase = clientResult.client;
   const { data, error } = await supabase
     .from("reviews")
     .select("id,rating,title,body,created_at")

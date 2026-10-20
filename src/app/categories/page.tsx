@@ -19,7 +19,11 @@ export default async function CategoriesPage() {
         description="Browse active product categories from the Sachin Brands catalog."
       />
       {result.error && (
-        <CatalogStatus message="Supabase categories could not be loaded. Apply the catalog migration and check public read access." />
+        <CatalogStatus
+          message={result.error.code === "SUPABASE_CONFIGURATION_ERROR"
+            ? "Supabase is not configured for this deployment. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY to the Vercel project, then redeploy."
+            : "Supabase categories could not be loaded. Apply the catalog migration and check public read access."}
+        />
       )}
       {result.data.length ? (
         <div className="sb-category-grid sb-category-page-grid">

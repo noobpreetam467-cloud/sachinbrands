@@ -23,9 +23,11 @@ function GoogleMark() {
 export default function LoginForm({
   authError,
   callbackUrl,
+  disabled = false,
 }: {
   authError: string | null;
   callbackUrl: string;
+  disabled?: boolean;
 }) {
   const [state, formAction, pending] = useActionState(
     loginWithCredentials,
@@ -54,7 +56,7 @@ export default function LoginForm({
 
           <form action={loginWithGoogle}>
             <input name="callbackUrl" type="hidden" value={callbackUrl} />
-            <button className="auth-google-button" type="submit">
+            <button className="auth-google-button" disabled={disabled} type="submit">
               <GoogleMark />
               Continue with Google
             </button>
@@ -67,6 +69,7 @@ export default function LoginForm({
             <label htmlFor="login-email">Email address</label>
             <input
               autoComplete="email"
+              disabled={disabled}
               id="login-email"
               name="email"
               placeholder="you@example.com"
@@ -80,6 +83,7 @@ export default function LoginForm({
             </div>
             <input
               autoComplete="current-password"
+              disabled={disabled}
               id="login-password"
               name="password"
               placeholder="Enter your password"
@@ -89,7 +93,7 @@ export default function LoginForm({
 
             {error && <p className="auth-error" role="alert">{error}</p>}
 
-            <button className="auth-submit" disabled={pending} type="submit">
+            <button className="auth-submit" disabled={disabled || pending} type="submit">
               {pending ? "Signing in..." : "Sign in"}
               <span aria-hidden="true">→</span>
             </button>

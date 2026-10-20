@@ -50,7 +50,11 @@ export async function StorefrontHome() {
   return (
     <StorefrontLayout active="home">
       {catalogError && (
-        <CatalogStatus message="Live catalog not configured. Apply the Supabase catalog migration to display active categories and published products." />
+        <CatalogStatus
+          message={catalogError.code === "SUPABASE_CONFIGURATION_ERROR"
+            ? "Supabase is not configured for this deployment. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY to the Vercel project, then redeploy."
+            : "Live catalog not configured. Apply the Supabase catalog migration to display active categories and published products."}
+        />
       )}
       <section className="sb-hero">
         <div className="sb-hero-glow" aria-hidden="true" />

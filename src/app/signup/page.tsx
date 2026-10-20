@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { SITE_LOGO_PATH, SITE_NAME } from "@/config/site";
+import { isSupabaseConfigured } from "@/utils/supabase/config";
 import { createReadOnlyClient } from "@/utils/supabase/server";
 import { signUpWithEmail } from "./actions";
 
@@ -15,12 +16,17 @@ export default async function SignupPage({
 }: {
   searchParams: Promise<{ error?: string; created?: string }>;
 }) {
-  const supabase = await createReadOnlyClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (user) redirect("/account");
+  const supabaseConfigured = isSupabaseConfigured();
+  if (supabaseConfigured) {
+    const supabase = await createReadOnlyClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) redirect("/account");
+  }
   const params = await searchParams;
   const message =
-    params.created === "true"
+    !supabaseConfigured
+      ? "Account creation is unavailable because Supabase is not configured. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY in Vercel, then redeploy."
+      : params.created === "true"
       ? "If email confirmation is enabled, check your inbox to finish creating your account."
       : params.error === "exists"
         ? "An account with this email already exists. Try signing in."
@@ -35,8 +41,8 @@ export default async function SignupPage({
       <header className="auth-header"><Link aria-label={`${SITE_NAME} home`} className="auth-brand" href="/"><Image alt="" height={34} priority src={SITE_LOGO_PATH} width={34} /><span>{SITE_NAME}</span></Link><Link className="auth-header-link" href="/">Back to store <span aria-hidden="true">↗</span></Link></header>
       <section className="sb-auth-prototype">
         <span className="sb-eyebrow">JOIN SACHIN BRANDS</span><h1>Create your account</h1><p>Set up a customer account with Supabase Auth.</p>
-        {message && <p className={`profile-form-message${params.error ? " is-error" : ""}`} role={params.error ? "alert" : "status"}>{message}</p>}
-        {params.created !== "true" && (
+        {message && <p className={`profile-form-message${params.error || !supabaseConfigured ? " is-error" : ""}`} role={params.error || !supabaseConfigured ? "alert" : "status"}>{message}</p>}
+        {supabaseConfigured && params.created !== "true" && (
           <form action={signUpWithEmail} className="profile-edit-form">
             <label htmlFor="signup-name">Full name</label><input autoComplete="name" id="signup-name" maxLength={100} minLength={2} name="name" required />
             <label htmlFor="signup-email">Email address</label><input autoComplete="email" id="signup-email" name="email" required type="email" />

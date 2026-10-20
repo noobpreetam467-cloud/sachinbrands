@@ -70,7 +70,13 @@ export default async function ProductsPage({
         description="Explore the products currently published in the Sachin Brands catalog."
       />
       {(result.error || categoryResult.error || brandsResult.error) && (
-        <CatalogStatus message="Supabase catalog is unavailable. Apply the catalog migration and confirm public read policies to load real products." />
+        <CatalogStatus
+          message={[result.error, categoryResult.error, brandsResult.error].some(
+            (error) => error?.code === "SUPABASE_CONFIGURATION_ERROR",
+          )
+            ? "Supabase is not configured for this deployment. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY to the Vercel project, then redeploy."
+            : "Supabase catalog is unavailable. Apply the catalog migration and confirm public read policies to load real products."}
+        />
       )}
       {!result.error && (
         <>
@@ -143,7 +149,13 @@ export default async function ProductsPage({
           )}
         </>
       )}
-      {result.error && <CatalogUnavailable />}
+      {result.error && (
+        <CatalogUnavailable
+          message={result.error.code === "SUPABASE_CONFIGURATION_ERROR"
+            ? "Configure NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY in Vercel, then redeploy to connect the catalog."
+            : undefined}
+        />
+      )}
     </StorefrontLayout>
   );
 }
