@@ -50,11 +50,6 @@ export async function StorefrontLayout({
   const storeName = content?.public_store_name || SITE_NAME;
   return (
     <div className="sb-store">
-      <div className="sb-announcement">
-        <span className="sb-announcement-dot" />
-        Thoughtful tech. Straightforward service.
-        <Link href="/shipping">Discover the SB difference <Icon name="arrow" size={15} /></Link>
-      </div>
       <ScrollReveal />
       <header className="sb-header">
         <div className="sb-header-inner">

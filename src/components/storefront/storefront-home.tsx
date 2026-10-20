@@ -13,15 +13,18 @@ export async function StorefrontHome() {
   const content = await getStorefrontContent();
   const featuredCategoryIds = content?.featured_category_ids ?? [];
   const featuredProductIds = content?.featured_product_ids ?? [];
-  const [categoriesResult, bestsellerResult, newResult, trendingResult] =
+  const [categoriesResult, bestsellerResult, newResult, extraTrendingResult] =
     await Promise.all([
       getCategories(),
       getProducts(featuredProductIds.length
         ? { ids: featuredProductIds, sort: "popular", pageSize: 4 }
         : { sort: "popular", pageSize: 4 }),
       getProducts({ sort: "newest", pageSize: 4 }),
-      getProducts({ sort: "popular", pageSize: 4 }),
+      featuredProductIds.length
+        ? getProducts({ sort: "popular", pageSize: 4 })
+        : Promise.resolve(null),
     ]);
+  const trendingResult = extraTrendingResult ?? bestsellerResult;
   const categories = featuredCategoryIds.length
     ? categoriesResult.data
       .filter((category) => featuredCategoryIds.includes(category.id))

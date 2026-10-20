@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/utils/supabase/server";
 import { isSameOriginRequest } from "@/utils/same-origin";
+import { isRazorpayConfigured } from "@/utils/razorpay-config";
 
 export const runtime = "nodejs";
 
@@ -67,11 +68,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Online payment is not currently available." }, { status: 409 });
   }
 
-  const isRazorpayConfigured =
-    parsed.data.paymentMethod !== "razorpay" ||
-    (process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET);
-  if (!isRazorpayConfigured) {
-    return NextResponse.json({ error: "Online payment is not configured. Choose Cash on Delivery if it is available." }, { status: 503 });
+  if (parsed.data.paymentMethod === "razorpay" && !isRazorpayConfigured()) {
+    return NextResponse.json({ error: "Online payment is not fully configured. Choose Cash on Delivery if it is available." }, { status: 503 });
   }
 
   const { data: order, error: orderError } = await supabase.rpc("place_checkout_order", {

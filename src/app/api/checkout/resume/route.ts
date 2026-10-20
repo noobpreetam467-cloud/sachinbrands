@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/utils/supabase/server";
 import { isSameOriginRequest } from "@/utils/same-origin";
+import { isRazorpayConfigured } from "@/utils/razorpay-config";
 
 export const runtime = "nodejs";
 
@@ -24,7 +25,7 @@ export async function POST(request: Request) {
   }
   const parsed = resumeSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: "Order reference is invalid." }, { status: 400 });
-  if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
+  if (!isRazorpayConfigured()) {
     return NextResponse.json({ error: "Razorpay is not configured to resume this payment." }, { status: 503 });
   }
 

@@ -170,6 +170,14 @@ RAZORPAY_WEBHOOK_SECRET=
 SUPABASE_SERVICE_ROLE_KEY=
 ```
 
+Because payment credentials were shared in chat, revoke/rotate that Razorpay
+key pair in the Razorpay Dashboard before configuring the integration. Add the
+new key ID, key secret, webhook secret, and Supabase service-role key as
+server-side environment variables in local `.env.local` and the production
+deployment environment. Do not paste them into source files, browser settings,
+or chat, and never expose the service-role or payment secret through a
+`NEXT_PUBLIC_` variable.
+
 Set the Razorpay webhook URL to
 `https://<your-domain>/api/razorpay/webhook` and subscribe to
 `payment.captured`. The webhook signing secret must match

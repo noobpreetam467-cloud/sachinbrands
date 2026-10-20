@@ -47,7 +47,9 @@ export default async function OrderConfirmationPage({
   }
 
   const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError) console.error("Could not verify order confirmation session:", authError.message);
+  if (authError && authError.name !== "AuthSessionMissingError") {
+    console.error("Could not verify order confirmation session:", authError.message);
+  }
   if (!user) redirect(`/login?callbackUrl=${encodeURIComponent(`/order-confirmation?ref=${ref}`)}`);
 
   const { data: rawOrder, error: orderError } = await supabase

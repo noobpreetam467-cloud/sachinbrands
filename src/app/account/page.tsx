@@ -99,7 +99,9 @@ export default async function AccountPage({
     return <main className="account-page account-dashboard-page"><section className="profile-panel"><h1>Account setup required</h1><p>Configure Supabase and apply the customer account migration to continue.</p></section></main>;
   }
   const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError) console.error("Could not verify the customer account session:", authError.message);
+  if (authError && authError.name !== "AuthSessionMissingError") {
+    console.error("Could not verify the customer account session:", authError.message);
+  }
   if (!user?.email) redirect("/login?callbackUrl=%2Faccount");
 
   const params = await searchParams;

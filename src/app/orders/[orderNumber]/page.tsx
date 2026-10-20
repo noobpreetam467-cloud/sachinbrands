@@ -54,7 +54,9 @@ export default async function OrderDetailPage({
     return <StorefrontLayout active="profile"><PageHeading eyebrow="Your account" title="Order tracking unavailable" description="We couldn't connect to the order service." /><div className="sb-empty-page" role="alert"><p>Check Supabase configuration and try again.</p></div></StorefrontLayout>;
   }
   const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError) console.error("Could not verify order detail session:", authError.message);
+  if (authError && authError.name !== "AuthSessionMissingError") {
+    console.error("Could not verify order detail session:", authError.message);
+  }
   if (!user) redirect(`/login?callbackUrl=${encodeURIComponent(`/orders/${orderNumber}`)}`);
   const { data: order, error: orderError } = await supabase
     .from("orders")

@@ -7,6 +7,7 @@ import { PageHeading } from "@/components/storefront/page-heading";
 import { ResumePaymentButton } from "@/components/storefront/resume-payment-button";
 import { StorefrontLayout } from "@/components/storefront/storefront-layout";
 import { createReadOnlyClient } from "@/utils/supabase/server";
+import { isRazorpayConfigured } from "@/utils/razorpay-config";
 
 export const dynamic = "force-dynamic";
 
@@ -45,7 +46,9 @@ export default async function OrdersPage() {
   }
 
   const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError) console.error("Could not verify order history session:", authError.message);
+  if (authError && authError.name !== "AuthSessionMissingError") {
+    console.error("Could not verify order history session:", authError.message);
+  }
   if (!user) redirect("/login?callbackUrl=%2Forders");
 
   const { data, error } = await supabase
@@ -66,7 +69,7 @@ export default async function OrdersPage() {
     current.push(item);
     itemsByOrder.set(item.order_id, current);
   }
-  const razorpayCanResume = Boolean(process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET);
+  const razorpayCanResume = isRazorpayConfigured();
 
   return (
     <StorefrontLayout active="profile">

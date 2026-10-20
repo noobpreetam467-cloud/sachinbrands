@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { createReadOnlyClient } from "@/utils/supabase/server";
 import {
   CATALOG_PRODUCT_SELECT,
@@ -160,9 +161,9 @@ export async function getProductBrands(): Promise<CatalogResult<string[]>> {
   };
 }
 
-export async function getProductBySlug(
+export const getProductBySlug = cache(async (
   slug: string,
-): Promise<CatalogResult<StoreProduct | null>> {
+): Promise<CatalogResult<StoreProduct | null>> => {
   const supabase = await createReadOnlyClient();
   const { data, error } = await supabase
     .from("catalog_products")
@@ -196,7 +197,7 @@ export async function getProductBySlug(
   const product = mapCatalogProduct(productRow);
   product.images = images;
   return { data: product, error: null };
-}
+});
 
 export async function getProductVariants(
   productId: string,

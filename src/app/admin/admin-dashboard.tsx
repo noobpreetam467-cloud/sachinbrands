@@ -12,10 +12,14 @@ import {
   updateOrderFulfillment,
   updateReturnStatus,
 } from "./actions";
+import { CatalogImage } from "@/components/storefront/catalog-image";
 import { ConfirmAdminSubmit } from "./confirm-admin-submit";
+import { ProductLinkAssistant } from "./product-link-assistant";
+import type { AdminSection } from "./dashboard-page";
 
 type AdminRow = Record<string, unknown>;
 type DashboardProps = {
+  activeSection: AdminSection;
   categories: AdminRow[];
   coupons: AdminRow[];
   customers: AdminRow[];
@@ -128,7 +132,7 @@ function messageFor(code: string | null, kind: "notice" | "error"): string | nul
     "review-update-failed": "Could not moderate this review.",
     "invalid-store-settings": "One or more store settings are invalid.",
     "save-store-settings-failed": "Could not save store settings; check that featured IDs refer to active catalog items.",
-    "razorpay-not-configured": "Razorpay cannot be enabled until server-only RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET are configured.",
+    "razorpay-not-configured": "Razorpay needs all server-only payment keys and webhook verification settings before it can be enabled.",
   };
   return known[code] ?? (kind === "error" ? "The operation could not be completed." : null);
 }
@@ -187,7 +191,7 @@ function ProductForm({ product, categories }: { product?: AdminRow; categories: 
   const images = product ? list(product.product_images) : [];
   const specifications = product ? row(product.specifications) : {};
   return (
-    <form action={saveProduct} className="admin-form admin-product-form">
+    <form action={saveProduct} className="admin-form admin-product-form" id={product ? undefined : "create-product-form"}>
       {product && <input name="id" type="hidden" value={text(product.id)} />}
       <label>Product name<input defaultValue={text(product?.name)} maxLength={160} name="name" required /></label>
       <label>Slug<input defaultValue={text(product?.slug)} name="slug" pattern="[a-z0-9]+(-[a-z0-9]+)*" required /></label>
@@ -224,7 +228,7 @@ function ProductForm({ product, categories }: { product?: AdminRow; categories: 
         <textarea defaultValue={images.sort((a, b) => num(a.position) - num(b.position)).map((image) => text(image.image_url)).join("\n")} name="existingImageUrls" rows={3} />
       </label>
       <label className="admin-field-wide">Upload additional product images
-        <input accept="image/jpeg,image/png,image/webp,image/avif" multiple name="images" type="file" />
+        <input accept="image/jpeg,image/png,image/webp,image/avif" id={product ? undefined : "create-product-images"} multiple name="images" type="file" />
         <small>JPEG, PNG, WebP or AVIF; 5 MB combined per save and 10 images total.</small>
       </label>
       <ConfirmAdminSubmit className="admin-button admin-button-primary" confirmField="status" confirmValue="archived" message="Archive this product from the customer storefront? Existing order history will remain." >{product ? "Save product" : "Create product"}</ConfirmAdminSubmit>
@@ -245,29 +249,30 @@ export default function AdminDashboard(props: DashboardProps) {
   const notice = messageFor(props.notice, "notice");
   const error = messageFor(props.errorCode, "error");
   const sections = [
-    ["Overview", "#overview"],
-    ["Products", "#products"],
-    ["Categories", "#categories"],
-    ["Orders", "#orders"],
-    ["Customers", "#customers"],
-    ["Inventory", "#inventory"],
-    ["Coupons", "#coupons"],
-    ["Returns", "#returns"],
-    ["Reviews", "#reviews"],
-    ["Store settings", "#settings"],
+    ["Overview", "overview"],
+    ["Products", "products"],
+    ["Categories", "categories"],
+    ["Orders", "orders"],
+    ["Customers", "customers"],
+    ["Inventory", "inventory"],
+    ["Coupons", "coupons"],
+    ["Returns", "returns"],
+    ["Reviews", "reviews"],
+    ["Store settings", "settings"],
   ] as const;
   const orderQuery = new URLSearchParams();
   if (props.orderSearch) orderQuery.set("orderSearch", props.orderSearch);
   if (props.orderStatus) orderQuery.set("orderStatus", props.orderStatus);
-  const orderHref = (page: number) => `/admin?${new URLSearchParams({ ...Object.fromEntries(orderQuery), ordersPage: String(page) }).toString()}#orders`;
-  const customerHref = (page: number) => `/admin?customersPage=${page}#customers`;
-  const productHref = (page: number) => `/admin?productsPage=${page}#products`;
+  const orderHref = (page: number) => `/admin/orders?${new URLSearchParams({ ...Object.fromEntries(orderQuery), ordersPage: String(page) }).toString()}`;
+  const customerHref = (page: number) => `/admin/customers?customersPage=${page}`;
+  const productHref = (page: number) => `/admin/products?productsPage=${page}`;
+  const activeHeading = sections.find(([, section]) => section === props.activeSection)?.[0] ?? "Overview";
   const featuredIds = (value: unknown) => Array.isArray(value)
     ? value.filter((item): item is string => typeof item === "string").join(", ")
     : "";
 
   return (
-    <div className="admin-shell" id="overview">
+    <div className="admin-shell">
       <aside className="admin-sidebar">
         <Link aria-label={`${SITE_NAME} storefront`} className="admin-brand" href="/">
           <Image alt="" height={34} priority src={SITE_LOGO_PATH} width={34} />
@@ -275,12 +280,12 @@ export default function AdminDashboard(props: DashboardProps) {
         </Link>
         <div className="admin-store-label">STORE MANAGEMENT</div>
         <nav aria-label="Admin navigation" className="admin-navigation">
-          {sections.map(([label, href], index) => (
-            <a aria-current={index === 0 ? "page" : undefined} className={`admin-nav-link${index === 0 ? " is-active" : ""}`} href={href} key={label}>
+          {sections.map(([label, section], index) => (
+            <Link aria-current={props.activeSection === section ? "page" : undefined} className={`admin-nav-link${props.activeSection === section ? " is-active" : ""}`} href={section === "overview" ? "/admin" : `/admin/${section}`} key={label}>
               <span aria-hidden="true" className="admin-nav-symbol">{["◫", "◇", "▦", "▤", "♙", "◈", "%", "↩", "☆", "⚙"][index]}</span>
               <span>{label}</span>
               {label === "Orders" && props.orderTotal > 0 && <span className="admin-nav-count">{props.orderTotal}</span>}
-            </a>
+            </Link>
           ))}
         </nav>
         <div className="admin-sidebar-bottom">
@@ -301,13 +306,14 @@ export default function AdminDashboard(props: DashboardProps) {
 
         <div className="admin-content">
           <div className="admin-page-heading">
-            <div><div className="admin-eyebrow">STORE OVERVIEW</div><h1>Good to see you<span>.</span></h1><p>Live performance and store operations from your Supabase project.</p></div>
+            <div><div className="admin-eyebrow">{props.activeSection === "overview" ? "STORE OVERVIEW" : "STORE MANAGEMENT"}</div><h1>{props.activeSection === "overview" ? <>Good to see you<span>.</span></> : activeHeading}</h1><p>{props.activeSection === "overview" ? "Live performance and store operations from your Supabase project." : `Manage ${activeHeading.toLowerCase()} for your store.`}</p></div>
             <Link className="admin-button admin-button-light" href="/products">View catalog ↗</Link>
           </div>
           {props.errorMessage && <div className="admin-alert is-error" role="alert">{props.errorMessage}</div>}
           {notice && <div className="admin-alert is-success" role="status">{notice}</div>}
           {error && <div className="admin-alert is-error" role="alert">{error}</div>}
 
+          {props.activeSection === "overview" && <>
           <div className="admin-metrics">
             {[
               ["Orders", text(metrics.orders_total), "All recorded orders"],
@@ -346,7 +352,7 @@ export default function AdminDashboard(props: DashboardProps) {
               </div> : <div className="admin-empty-state">No sales data is available for this range.</div>}
             </section>
             <section className="admin-panel admin-inventory-panel">
-              <div className="admin-panel-heading"><div><h2>Low stock</h2><p>Live stock across active variants.</p></div><a className="admin-text-link" href="#inventory">Manage stock →</a></div>
+              <div className="admin-panel-heading"><div><h2>Low stock</h2><p>Live stock across active variants.</p></div><Link className="admin-text-link" href="/admin/inventory">Manage stock →</Link></div>
               <div className="admin-stock-summary"><span className="admin-stock-indicator" />{text(metrics.low_stock_count)} variants need attention</div>
               {lowStock.length ? lowStock.map((item) => (
                 <div className="admin-stock-row" key={text(item.variant_id)}>
@@ -363,17 +369,32 @@ export default function AdminDashboard(props: DashboardProps) {
               <div className="admin-list-row" key={text(item.product_name)}><strong>{text(item.product_name)}</strong><span>{text(item.quantity_sold)} sold</span><span>{inr(item.revenue_inr)}</span></div>
             ))}</div> : <div className="admin-empty-state">No eligible paid sales yet.</div>}
           </Panel>
+          </>}
 
+          {props.activeSection === "products" && <>
           <SectionHeading eyebrow="CATALOG" title="Products" description="Create, publish, update and archive products and variants." id="products" />
-          <Panel title="Create a product" description="Add product details and variant data. Initial variant stock is recorded as an audited inventory movement.">
-            <ProductForm categories={props.categories} />
-          </Panel>
+          <details className="admin-create-product">
+            <summary><span>Add product</span><span>Open product details and variant form</span></summary>
+            <div className="admin-create-product-content">
+              <p>Add product details and variant data. Initial variant stock is recorded as an audited inventory movement.</p>
+              <ProductLinkAssistant />
+              <ProductForm categories={props.categories} />
+            </div>
+          </details>
           <Panel title={`Products (${props.productTotal})`} description="Edit product information, images and variant pricing. Archive instead of deleting products referenced by orders.">
             {props.products.length ? <div className="admin-record-list">{props.products.map((product) => {
               const category = related(product.categories);
               const variants = list(product.product_variants);
+              const primaryImage = list(product.product_images)
+                .sort((first, second) => num(first.position) - num(second.position))[0];
               return <details className="admin-record" key={text(product.id)}>
-                <summary><span><strong>{text(product.name)}</strong><small>{text(product.brand)} · {text(category.name)} · {text(product.slug)}</small></span>
+                <summary>
+                  <span className="admin-record-product-image">
+                    {primaryImage && text(primaryImage.image_url)
+                      ? <CatalogImage alt="" sizes="56px" src={text(primaryImage.image_url)} />
+                      : <span aria-hidden="true">P</span>}
+                  </span>
+                  <span className="admin-record-product-copy"><strong>{text(product.name)}</strong><small>{text(product.brand)} · {text(category.name)} · {text(product.slug)}</small></span>
                   <span>{inr(product.price_inr)}</span><span className={`admin-status-badge status-${text(product.status)}`}><span />{humanize(product.status)}</span></summary>
                 <ProductForm categories={props.categories} product={product} />
                 {variants.length > 0 && <p className="admin-record-foot">{variants.length} variant(s); current stock: {variants.map((variant) => `${text(variant.sku)} ${num(variant.stock_quantity)}`).join(" · ")}</p>}
@@ -381,7 +402,9 @@ export default function AdminDashboard(props: DashboardProps) {
             })}</div> : <div className="admin-empty-state">No products are available to manage.</div>}
             <Pager href={productHref} page={props.productPage} pages={productPageCount} />
           </Panel>
+          </>}
 
+          {props.activeSection === "categories" && <>
           <SectionHeading eyebrow="CATALOG STRUCTURE" title="Categories" description="Manage visibility, display order and image assets for catalog categories." id="categories" />
           <Panel title="Create category" description="Category images are uploaded to the public product-images bucket and are optimized by the storefront.">
             <CategoryForm />
@@ -395,10 +418,12 @@ export default function AdminDashboard(props: DashboardProps) {
               </details>
             ))}</div> : <div className="admin-empty-state">No categories are available.</div>}
           </Panel>
+          </>}
 
+          {props.activeSection === "orders" && <>
           <SectionHeading eyebrow="FULFILLMENT" title="Orders" description="Review order details and apply only permitted status transitions." id="orders" />
           <Panel title={`Order management · ${props.orderTotal} matching`} description="Payment states are displayed from verified Supabase records and cannot be manually edited here.">
-            <form action="/admin#orders" className="admin-filter-form" method="get">
+            <form action="/admin/orders" className="admin-filter-form" method="get">
               <input defaultValue={props.orderSearch} name="orderSearch" placeholder="Search order number or customer email" />
               <select defaultValue={props.orderStatus} name="orderStatus"><option value="">All statuses</option>
                 {["pending_payment", "confirmed", "processing", "shipped", "delivered", "cancelled"].map((status) => <option key={status} value={status}>{humanize(status)}</option>)}
@@ -440,7 +465,9 @@ export default function AdminDashboard(props: DashboardProps) {
             })}</div> : <div className="admin-empty-state">No matching orders.</div>}
             <Pager href={orderHref} page={props.orderPage} pages={orderPageCount} />
           </Panel>
+          </>}
 
+          {props.activeSection === "customers" && <>
           <SectionHeading eyebrow="CUSTOMER CARE" title="Customers" description="Customer details and actual order history from Supabase Auth and commerce tables." id="customers" />
           <Panel title="Customer accounts" description="Only customer email, profile name, registration date, order count and paid lifetime spend are shown.">
             {props.customers.length ? <div className="admin-record-list">{props.customers.map((customer) => {
@@ -450,13 +477,15 @@ export default function AdminDashboard(props: DashboardProps) {
                 <summary><span><strong>{text(customer.full_name) || "Customer"}</strong><small>{text(customer.email)} · joined {date(customer.created_at)}</small></span>
                   <span>{text(customer.orders_count)} orders</span><span>{inr(customer.lifetime_spend_inr)} paid</span></summary>
                 <p className="admin-record-foot">Customer ID: {customerId} · Email and account credentials remain managed by Supabase Auth.</p>
-                <Link className="admin-button admin-button-light" href={`/admin?customerId=${encodeURIComponent(customerId)}#customers`}>View order history</Link>
+                <Link className="admin-button admin-button-light" href={`/admin/customers?customerId=${encodeURIComponent(customerId)}`}>View order history</Link>
                 {selected && <CustomerOrderHistory orders={props.customerOrders} />}
               </details>;
             })}</div> : <div className="admin-empty-state">No customer accounts found.</div>}
             <Pager href={customerHref} page={props.customerPage} pages={customerPageCount} />
           </Panel>
+          </>}
 
+          {props.activeSection === "inventory" && <>
           <SectionHeading eyebrow="INVENTORY" title="Stock and adjustments" description="Every quantity change is atomic, attributed to the signed-in administrator and recorded with a reason." id="inventory" />
           <Panel title="Active variants" description="Use positive numbers to add stock and negative numbers to remove stock. Stock cannot fall below zero.">
             <div className="admin-inventory-adjust-list">{props.products.flatMap((product) => list(product.product_variants).map((variant) => ({ product, variant }))).map(({ product, variant }) => (
@@ -480,7 +509,9 @@ export default function AdminDashboard(props: DashboardProps) {
               </div>;
             })}</div> : <div className="admin-empty-state">No inventory movements have been recorded.</div>}
           </Panel>
+          </>}
 
+          {props.activeSection === "coupons" && <>
           <SectionHeading eyebrow="PROMOTIONS" title="Coupons" description="Create and update coupon rules used by the server-side checkout validator." id="coupons" />
           <Panel title="Create coupon"><CouponForm /></Panel>
           <Panel title="Manage coupons">
@@ -492,13 +523,17 @@ export default function AdminDashboard(props: DashboardProps) {
               </details>
             ))}</div> : <div className="admin-empty-state">No coupons configured.</div>}
           </Panel>
+          </>}
 
+          {props.activeSection === "returns" && <>
           <SectionHeading eyebrow="AFTER-SALES" title="Returns and refunds" description="Manage request status only. A return approval does not perform a refund." id="returns" />
           <Panel title="Return requests" description="Review the reason and order reference, then update the request status.">
             {props.returns.length ? <div className="admin-record-list">{props.returns.map((request) => <ReturnRow key={text(request.id)} request={request} />)}</div> : <div className="admin-empty-state">No customer return requests.</div>}
             <div className="admin-alert">Refunds require a verified payment-provider operation and are not available as a manual status edit.</div>
           </Panel>
+          </>}
 
+          {props.activeSection === "reviews" && <>
           <SectionHeading eyebrow="MODERATION" title="Product reviews" description="Approve or reject customer-submitted reviews; only verified purchasers can submit reviews." id="reviews" />
           <Panel title="Review moderation">
             {props.reviews.length ? <div className="admin-record-list">{props.reviews.map((review) => (
@@ -512,7 +547,9 @@ export default function AdminDashboard(props: DashboardProps) {
               </div>
             ))}</div> : <div className="admin-empty-state">No reviews are awaiting or requiring moderation.</div>}
           </Panel>
+          </>}
 
+          {props.activeSection === "settings" && <>
           <SectionHeading eyebrow="STORE CONFIGURATION" title="Homepage and business settings" description="Changes to public homepage content and checkout availability take effect immediately after saving." id="settings" />
           <Panel title="Store, delivery, payment and homepage content" description="COD and Razorpay remain separate switches; enable them only after the operational setup is ready.">
             <form action={saveStoreSettings} className="admin-form admin-settings-form">
@@ -525,7 +562,7 @@ export default function AdminDashboard(props: DashboardProps) {
               <label>Return window (days)<input defaultValue={text(props.settings.return_window_days, "30")} min="0" max="365" name="returnWindowDays" required type="number" /></label>
               <label className="admin-checkbox"><input defaultChecked={props.settings.cod_enabled === true} name="codEnabled" type="checkbox" /> Enable Cash on Delivery</label>
               <label className="admin-checkbox"><input defaultChecked={props.settings.razorpay_enabled === true} disabled={!props.razorpayConfigured && props.settings.razorpay_enabled !== true} name="razorpayEnabled" type="checkbox" /> Enable Razorpay</label>
-              {!props.razorpayConfigured && <p className="admin-field-wide admin-record-foot">Razorpay server keys are not configured in this deployment, so new online checkouts cannot be enabled.</p>}
+              {!props.razorpayConfigured && <p className="admin-field-wide admin-record-foot">Razorpay is unavailable until the server-only API keys, webhook secret and Supabase service-role key are configured for this deployment.</p>}
               <label className="admin-field-wide">Hero headline<input defaultValue={text(props.storefront.hero_headline)} maxLength={200} name="heroHeadline" required /></label>
               <label className="admin-field-wide">Hero description<textarea defaultValue={text(props.storefront.hero_description)} maxLength={1000} name="heroDescription" rows={3} /></label>
               <label>Hero CTA label<input defaultValue={text(props.storefront.hero_cta_label, "Shop now")} maxLength={50} name="heroCtaLabel" required /></label>
@@ -549,6 +586,7 @@ export default function AdminDashboard(props: DashboardProps) {
               <button className="admin-button admin-button-primary" type="submit">Save store settings</button>
             </form>
           </Panel>
+          </>}
           <footer className="admin-footer"><span>Protected by Supabase RLS and database role checks.</span><Link href="/">Return to storefront</Link></footer>
         </div>
       </main>
@@ -558,7 +596,7 @@ export default function AdminDashboard(props: DashboardProps) {
 
 function CategoryForm({ category }: { category?: AdminRow }) {
   return (
-    <form action={saveCategory} className="admin-form admin-category-form" encType="multipart/form-data">
+    <form action={saveCategory} className="admin-form admin-category-form">
       {category && <input name="id" type="hidden" value={text(category.id)} />}
       <label>Name<input defaultValue={text(category?.name)} maxLength={100} name="name" required /></label>
       <label>Slug<input defaultValue={text(category?.slug)} name="slug" pattern="[a-z0-9]+(-[a-z0-9]+)*" required /></label>

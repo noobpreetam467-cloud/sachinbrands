@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createClient } from "@/utils/supabase/server";
+import { isRazorpayConfigured } from "@/utils/razorpay-config";
 
 const uuidSchema = z.string().uuid();
 const slugSchema = z.string().trim().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).max(160);
@@ -48,15 +49,16 @@ async function requireAdmin() {
 
 function done(section: string, notice: string): never {
   revalidatePath("/admin");
+  revalidatePath(`/admin/${section}`);
   revalidatePath("/");
   revalidatePath("/products");
   revalidatePath("/categories");
-  redirect(`/admin?notice=${encodeURIComponent(notice)}#${section}`);
+  redirect(`/admin/${section}?notice=${encodeURIComponent(notice)}`);
 }
 
 function fail(section: string, notice: string, error?: { message?: string } | null): never {
   if (error?.message) console.error(`Admin ${section} operation failed:`, error.message);
-  redirect(`/admin?error=${encodeURIComponent(notice)}#${section}`);
+  redirect(`/admin/${section}?error=${encodeURIComponent(notice)}`);
 }
 
 function parseJsonObject(value: FormDataEntryValue | null) {
@@ -385,7 +387,7 @@ export async function saveStoreSettings(formData: FormData) {
     return_window_days: Number(formData.get("returnWindowDays")),
   });
   if (!store.success) fail("settings", "invalid-store-settings");
-  if (store.data.razorpay_enabled && !(process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET)) {
+  if (store.data.razorpay_enabled && !isRazorpayConfigured()) {
     fail("settings", "razorpay-not-configured");
   }
   const featuredCategoryIdsValue = formData.get("featuredCategoryIds");

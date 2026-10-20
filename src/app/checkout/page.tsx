@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { PageHeading } from "@/components/storefront/page-heading";
 import { StorefrontLayout } from "@/components/storefront/storefront-layout";
 import { createReadOnlyClient } from "@/utils/supabase/server";
+import { isRazorpayConfigured } from "@/utils/razorpay-config";
 import CheckoutForm, { type CheckoutAddress } from "./checkout-form";
 
 export const metadata: Metadata = {
@@ -38,7 +39,9 @@ export default async function CheckoutPage() {
   }
 
   const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError) console.error("Could not verify checkout session:", authError.message);
+  if (authError && authError.name !== "AuthSessionMissingError") {
+    console.error("Could not verify checkout session:", authError.message);
+  }
   if (!user?.email) redirect("/login?callbackUrl=%2Fcheckout");
 
   const [addressResult, configResult] = await Promise.all([
@@ -73,7 +76,7 @@ export default async function CheckoutPage() {
     cod_enabled: rawConfig.cod_enabled === true,
     razorpay_enabled:
       rawConfig.razorpay_enabled === true &&
-      Boolean(process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET),
+      isRazorpayConfigured(),
     shipping_fee_inr: Number(rawConfig.shipping_fee_inr ?? 0),
     free_shipping_threshold_inr:
       rawConfig.free_shipping_threshold_inr === null || rawConfig.free_shipping_threshold_inr === undefined
