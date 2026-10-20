@@ -147,6 +147,7 @@ create policy "Customers read their own reviews" on public.reviews
   for select to authenticated using (user_id = (select auth.uid()));
 
 drop policy if exists "Customers can submit pending reviews for themselves" on public.reviews;
+drop policy if exists "Verified customers can submit pending reviews" on public.reviews;
 create policy "Verified customers can submit pending reviews"
   on public.reviews for insert to authenticated
   with check (

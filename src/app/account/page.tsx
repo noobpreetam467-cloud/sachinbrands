@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 import { SITE_LOGO_PATH, SITE_NAME } from "@/config/site";
 import { formatPrice } from "@/data/catalog-types";
+import { isSupabaseConfigured } from "@/utils/supabase/config";
 import { createReadOnlyClient } from "@/utils/supabase/server";
 import {
   logout,
@@ -96,7 +97,10 @@ export default async function AccountPage({
     supabase = await createReadOnlyClient();
   } catch (error) {
     console.error("Could not configure the customer account:", error);
-    return <main className="account-page account-dashboard-page"><section className="profile-panel"><h1>Account setup required</h1><p>Configure Supabase and apply the customer account migration to continue.</p></section></main>;
+    const message = isSupabaseConfigured()
+      ? "The Supabase account service could not be initialized. Check the deployment configuration and try again."
+      : "Supabase is not configured for this deployment. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY in Vercel, then redeploy.";
+    return <main className="account-page account-dashboard-page"><section className="profile-panel"><h1>Account setup required</h1><p>{message}</p></section></main>;
   }
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError && authError.name !== "AuthSessionMissingError") {
